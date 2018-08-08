@@ -1,54 +1,43 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"os"
 )
 
-type codeError struct {
-	File    string
-	Line    int
-	Message string
+func warn(file string, line int, msg string) {
+	fmt.Print(file, `:`, line, `:`, msg, "\n")
 }
 
-func newCodeError(file string, line int, msg string) error {
-	return codeError{file, line, msg}
-}
-
-func (e codeError) Error() string {
-	return fmt.Sprint(e.File, `:`, e.Line, `:`, e.Message)
-}
-
-var fset = token.NewFileSet()
-var msgs []error
-
-func init() {
-	flag.Parse()
-}
+var fset *token.FileSet
 
 func main() {
-	pkgs, err := parser.ParseDir(fset, flag.Arg(0), nil, parser.ParseComments)
-	if err != nil {
-		panic(err)
+	if len(os.Args) < 2 {
+		fmt.Println(`Usage:`, os.Args[0], ` target1 [target2]...`)
+		os.Exit(2)
 	}
 
-	for _, pkg := range pkgs {
-		for _, file := range pkg.Files {
-			for _, f := range file.Decls {
-				decl, ok := f.(*ast.FuncDecl)
-				if !ok {
-					continue
+	for _, arg := range os.Args[1:] {
+		fset = token.NewFileSet()
+		pkgs, err := parser.ParseDir(fset, arg, nil, parser.ParseComments)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, pkg := range pkgs {
+			for _, file := range pkg.Files {
+				for _, f := range file.Decls {
+					decl, ok := f.(*ast.FuncDecl)
+					if !ok {
+						continue
+					}
+					ast.Walk(&visitor{}, decl)
 				}
-				ast.Walk(&visitor{}, decl)
 			}
 		}
-	}
-
-	for _, v := range msgs {
-		fmt.Println(v)
 	}
 }
 
@@ -91,7 +80,7 @@ func checkStart(start token.Pos, first ast.Node) {
 	}
 
 	if posLine(start)+1 < posLine(first.Pos()) {
-		msgs = append(msgs, newCodeError(posFile(start), posLine(start)+1, `unnecessary newline`))
+		warn(posFile(start), posLine(start)+1, `unnecessary newline`)
 	}
 }
 
@@ -101,6 +90,6 @@ func checkEnd(end token.Pos, last ast.Node) {
 	}
 
 	if posLine(end)-1 > posLine(last.End()) {
-		msgs = append(msgs, newCodeError(posFile(end), posLine(end)-1, `unnecessary newline`))
+		warn(posFile(end), posLine(end)-1, `unnecessary newline`)
 	}
 }
