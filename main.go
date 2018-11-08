@@ -13,6 +13,7 @@ func warn(file string, line int, msg string) {
 }
 
 var fset *token.FileSet
+var comments []*ast.CommentGroup
 
 func main() {
 	if len(os.Args) < 2 {
@@ -29,6 +30,7 @@ func main() {
 
 		for _, pkg := range pkgs {
 			for _, file := range pkg.Files {
+				comments = file.Comments
 				for _, f := range file.Decls {
 					decl, ok := f.(*ast.FuncDecl)
 					if !ok {
@@ -49,7 +51,7 @@ func (v visitor) Visit(node ast.Node) ast.Visitor {
 	}
 
 	if stmt, ok := node.(*ast.BlockStmt); ok {
-		first, last := firstAndLast(stmt.List)
+		first, last := firstAndLast(stmt.Pos(), stmt.End(), stmt.List)
 
 		checkStart(stmt.Lbrace, first)
 		checkEnd(stmt.Rbrace, last)
@@ -66,12 +68,25 @@ func posFile(pos token.Pos) string {
 	return fset.Position(pos).Filename
 }
 
-func firstAndLast(stmts []ast.Stmt) (ast.Node, ast.Node) {
+func firstAndLast(start, end token.Pos, stmts []ast.Stmt) (ast.Node, ast.Node) {
 	if len(stmts) == 0 {
 		return nil, nil
 	}
+	first, last := ast.Node(stmts[0]), ast.Node(stmts[len(stmts)-1])
 
-	return stmts[0], stmts[len(stmts)-1]
+	for _, c := range comments {
+		if c.Pos() < start || c.End() > end {
+			continue
+		}
+		if c.Pos() < first.Pos() {
+			first = c
+		}
+		if c.End() > last.End() {
+			last = c
+		}
+	}
+
+	return first, last
 }
 
 func checkStart(start token.Pos, first ast.Node) {
