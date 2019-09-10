@@ -17,7 +17,7 @@ func Run(file *ast.File, fset *token.FileSet) []Message {
 
 	for _, f := range file.Decls {
 		decl, ok := f.(*ast.FuncDecl)
-		if !ok {
+		if !ok || decl.Body == nil { // decl.Body can be nil for e.g. cgo
 			continue
 		}
 
