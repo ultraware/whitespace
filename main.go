@@ -84,7 +84,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		startMsg := checkStart(v.fset, stmt.Lbrace, first)
 
 		if wantNewline && startMsg == nil {
-			v.messages = append(v.messages, Message{v.fset.Position(stmt.Pos()), MessageTypeAddAfter, `multi-line statement should be followed by a newline`})
+			v.messages = append(v.messages, Message{v.fset.PositionFor(stmt.Pos(), false), MessageTypeAddAfter, `multi-line statement should be followed by a newline`})
 		} else if !wantNewline && startMsg != nil {
 			v.messages = append(v.messages, *startMsg)
 		}
@@ -106,7 +106,7 @@ func checkMultiLine(v *visitor, body *ast.BlockStmt, stmtStart ast.Node) {
 }
 
 func posLine(fset *token.FileSet, pos token.Pos) int {
-	return fset.Position(pos).Line
+	return fset.PositionFor(pos, false).Line
 }
 
 func firstAndLast(comments []*ast.CommentGroup, fset *token.FileSet, start, end token.Pos, stmts []ast.Stmt) (ast.Node, ast.Node) {
@@ -141,7 +141,7 @@ func checkStart(fset *token.FileSet, start token.Pos, first ast.Node) *Message {
 	}
 
 	if posLine(fset, start)+1 < posLine(fset, first.Pos()) {
-		pos := fset.Position(start)
+		pos := fset.PositionFor(start, false)
 		return &Message{pos, MessageTypeLeading, `unnecessary leading newline`}
 	}
 
@@ -154,7 +154,7 @@ func checkEnd(fset *token.FileSet, end token.Pos, last ast.Node) *Message {
 	}
 
 	if posLine(fset, end)-1 > posLine(fset, last.End()) {
-		pos := fset.Position(end)
+		pos := fset.PositionFor(end, false)
 		return &Message{pos, MessageTypeTrailing, `unnecessary trailing newline`}
 	}
 
