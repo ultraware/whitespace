@@ -244,18 +244,17 @@ func checkStart(fset *token.FileSet, start token.Pos, first ast.Node) *Message {
 	}
 
 	if posLine(fset, start)+1 < posLine(fset, first.Pos()) {
-		// We need to know what column we're at to mark or fix start at the
-		// first node position minus its columns mins the size of a newline.
-		firstColumn := fset.PositionFor(first.Pos(), false).Column
+		firstPosition := fset.PositionFor(first.Pos(), false)
 
 		return &Message{
 			Diagnostic: start,
-			// We remove 3 for the first statement position to account for the
-			// newline but not having to consider potential comments between the
-			// left bracket and the first statement.
-			FixStart:    first.Pos() - token.Pos(firstColumn) - 1,
+			// We remove all the tabs/spaces + 1 for the newline for the first
+			// statement position to account for the newline but not having to
+			// consider potential comments between the left bracket and the
+			// first statement.
+			FixStart:    first.Pos() - token.Pos(firstPosition.Column) - 1,
 			FixEnd:      first.Pos(),
-			LineNumber:  fset.PositionFor(first.Pos(), false).Line - 1,
+			LineNumber:  firstPosition.Line - 1,
 			MessageType: MessageTypeRemove,
 			Message:     "unnecessary leading newline",
 		}

@@ -37,3 +37,14 @@ func fn1(
 		}
 	}
 }
+
+// MultiFunc (FuncDecl) with comment.
+func fn2(
+	arg1 int,
+	arg2 int,
+) { // want "unnecessary leading newline"
+
+	// A comment.
+	fmt.Println("Hello, World")
+}
+

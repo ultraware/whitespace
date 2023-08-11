@@ -9,18 +9,18 @@ func fn1() { // want "unnecessary leading newline"
 
 // Whitespace before leading and after trailing comment.
 func fn2() { // want "unnecessary leading newline"
-	// Some leading comments - this should s till yield error.
+	// Some leading comments - this should yield error.
 	fmt.Println("Hello, World")
 	// And some trailing comments as well!
 } // want "unnecessary trailing newline"
 
 // Whitespace after leading and before trailing comment - no diagnostic.
 func fn3() {
-	// This is fine, newline is after commetn
+	// This is fine, newline is after comment
 
 	fmt.Println("Hello, World")
 
-	// And so is this!
+	// This is fine, newline before comment
 }
 
 // MultiFunc (FuncDecl), MultiIf and MultiFunc(FuncLit) without newlinew.
