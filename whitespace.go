@@ -41,10 +41,10 @@ type Message struct {
 	// FixEnd is the span end of the fix.
 	FixEnd token.Pos
 
-	// LineNumber represent the actual line number in the file. This is set when
-	// finding the diagnostic to make it easier to suggest fixes in
+	// LineNumbers represent the actual line number in the file. This is set
+	// when finding the diagnostic to make it easier to suggest fixes in
 	// golangci-lint.
-	LineNumber int
+	LineNumbers []int
 
 	// MessageType represents the type of message it is.
 	MessageType MessageType
@@ -176,15 +176,15 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			comments = nil // Comments also count as a newline if we want a newline
 		}
 
-		first, last := firstAndLast(comments, v.fset, stmt.Pos(), stmt.End(), stmt.List)
-		startMsg := checkStart(v.fset, stmt.Lbrace, first)
+		opening, first, last := firstAndLast(comments, v.fset, stmt)
+		startMsg := checkStart(v.fset, opening, first)
 
 		if wantNewline && startMsg == nil && len(stmt.List) >= 1 {
 			v.messages = append(v.messages, Message{
-				Diagnostic:  stmt.Lbrace,
+				Diagnostic:  opening,
 				FixStart:    stmt.List[0].Pos(),
 				FixEnd:      stmt.List[0].Pos(),
-				LineNumber:  v.fset.PositionFor(stmt.List[0].Pos(), false).Line,
+				LineNumbers: []int{v.fset.PositionFor(stmt.List[0].Pos(), false).Line},
 				MessageType: MessageTypeAdd,
 				Message:     "multi-line statement should be followed by a newline",
 			})
@@ -212,30 +212,42 @@ func posLine(fset *token.FileSet, pos token.Pos) int {
 	return fset.PositionFor(pos, false).Line
 }
 
-func firstAndLast(comments []*ast.CommentGroup, fset *token.FileSet, start, end token.Pos, stmts []ast.Stmt) (ast.Node, ast.Node) {
-	if len(stmts) == 0 {
-		return nil, nil
+func firstAndLast(comments []*ast.CommentGroup, fset *token.FileSet, stmt *ast.BlockStmt) (token.Pos, ast.Node, ast.Node) {
+	openingPos := stmt.Lbrace + 1
+
+	if len(stmt.List) == 0 {
+		return openingPos, nil, nil
 	}
 
-	first, last := ast.Node(stmts[0]), ast.Node(stmts[len(stmts)-1])
+	first, last := ast.Node(stmt.List[0]), ast.Node(stmt.List[len(stmt.List)-1])
 
 	for _, c := range comments {
-		if posLine(fset, c.Pos()) == posLine(fset, start) || posLine(fset, c.End()) == posLine(fset, end) {
+		// If the comment is on the same line as the opening pos (initially the
+		// left bracket) but it starts after the pos the comment must be after
+		// the bracket and where that comment ends should be considered where
+		// the fix should start.
+		if posLine(fset, c.End()) == posLine(fset, openingPos) && c.Pos() > openingPos {
+			openingPos = c.End()
+		}
+
+		if posLine(fset, c.Pos()) == posLine(fset, stmt.Pos()) || posLine(fset, c.End()) == posLine(fset, stmt.End()) {
 			continue
 		}
 
-		if c.Pos() < start || c.End() > end {
+		if c.Pos() < stmt.Pos() || c.End() > stmt.End() {
 			continue
 		}
+
 		if c.Pos() < first.Pos() {
 			first = c
 		}
+
 		if c.End() > last.End() {
 			last = c
 		}
 	}
 
-	return first, last
+	return openingPos, first, last
 }
 
 func checkStart(fset *token.FileSet, start token.Pos, first ast.Node) *Message {
@@ -244,17 +256,11 @@ func checkStart(fset *token.FileSet, start token.Pos, first ast.Node) *Message {
 	}
 
 	if posLine(fset, start)+1 < posLine(fset, first.Pos()) {
-		firstPosition := fset.PositionFor(first.Pos(), false)
-
 		return &Message{
-			Diagnostic: start,
-			// We remove all the tabs/spaces + 1 for the newline for the first
-			// statement position to account for the newline but not having to
-			// consider potential comments between the left bracket and the
-			// first statement.
-			FixStart:    first.Pos() - token.Pos(firstPosition.Column) - 1,
+			Diagnostic:  start,
+			FixStart:    start,
 			FixEnd:      first.Pos(),
-			LineNumber:  firstPosition.Line - 1,
+			LineNumbers: linesBetween(fset, start, first.Pos()),
 			MessageType: MessageTypeRemove,
 			Message:     "unnecessary leading newline",
 		}
@@ -273,11 +279,23 @@ func checkEnd(fset *token.FileSet, end token.Pos, last ast.Node) *Message {
 			Diagnostic:  end,
 			FixStart:    last.End(),
 			FixEnd:      end,
-			LineNumber:  fset.PositionFor(last.End(), false).Line + 1,
+			LineNumbers: linesBetween(fset, last.End(), end),
 			MessageType: MessageTypeRemove,
 			Message:     "unnecessary trailing newline",
 		}
 	}
 
 	return nil
+}
+
+func linesBetween(fset *token.FileSet, a, b token.Pos) []int {
+	lines := []int{}
+	aPosition := fset.PositionFor(a, false)
+	bPosition := fset.PositionFor(b, false)
+
+	for i := aPosition.Line + 1; i < bPosition.Line; i++ {
+		lines = append(lines, i)
+	}
+
+	return lines
 }
