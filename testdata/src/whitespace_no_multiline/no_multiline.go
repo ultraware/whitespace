@@ -85,7 +85,7 @@ func fn4() { // want "unnecessary leading newline"
 
 
 
-        fmt.Println("No cmoments")
+        fmt.Println("No comments")
 
 
     } // want "unnecessary trailing newline"
@@ -93,4 +93,61 @@ func fn4() { // want "unnecessary leading newline"
 
 
         
+} // want "unnecessary trailing newline"
+
+// Regular func (FuncDecl) that's not `gofmt`:ed. with comments
+func fn5() {
+	// A comment that should still exist after this
+	// This one should also still exist
+
+
+
+	fmt.Println("Hello, World")
+
+	if true {
+		// A comment that should still exist after this
+		// This one should also still exist
+
+
+
+		fmt.Println("No cmoments")
+
+
+	} // want "unnecessary trailing newline"
+
+
+
+
+} // want "unnecessary trailing newline"
+
+// Regular func (FuncDecl) that's not `gofmt`:ed. with comment blocks
+func fn6() {
+	/*
+		Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+		Curabitur ornare dolor at nulla ultrices cursus.
+		Mauris pharetra metus ac condimentum sodales.
+		Fusce viverra libero vitae tellus dictum, sed congue risus sodales.
+	*/
+
+
+
+	fmt.Println("Hello, World")
+
+	if true {
+		/*
+			Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+			Curabitur ornare dolor at nulla ultrices cursus.
+			Mauris pharetra metus ac condimentum sodales.
+			Fusce viverra libero vitae tellus dictum, sed congue risus sodales.
+		*/
+
+
+		fmt.Println("No cmoments")
+
+
+	} // want "unnecessary trailing newline"
+
+
+
+
 } // want "unnecessary trailing newline"

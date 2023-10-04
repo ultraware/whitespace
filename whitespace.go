@@ -41,7 +41,7 @@ type Message struct {
 	// FixEnd is the span end of the fix.
 	FixEnd token.Pos
 
-	// LineNumbers represent the actual line number in the file. This is set
+	// LineNumbers represent the actual line numbers in the file. This is set
 	// when finding the diagnostic to make it easier to suggest fixes in
 	// golangci-lint.
 	LineNumbers []int
