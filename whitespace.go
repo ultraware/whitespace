@@ -226,8 +226,14 @@ func firstAndLast(comments []*ast.CommentGroup, fset *token.FileSet, stmt *ast.B
 		// left bracket) but it starts after the pos the comment must be after
 		// the bracket and where that comment ends should be considered where
 		// the fix should start.
-		if posLine(fset, c.End()) == posLine(fset, openingPos) && c.Pos() > openingPos {
-			openingPos = c.End()
+		if posLine(fset, c.Pos()) == posLine(fset, openingPos) && c.Pos() > openingPos {
+			if posLine(fset, c.End()) != posLine(fset, openingPos) {
+				// This is a multiline comment that spans from the `LBrace` line
+				// to a line further down. This should always be seen as ok!
+				first = c
+			} else {
+				openingPos = c.End()
+			}
 		}
 
 		if posLine(fset, c.Pos()) == posLine(fset, stmt.Pos()) || posLine(fset, c.End()) == posLine(fset, stmt.End()) {

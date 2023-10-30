@@ -151,3 +151,21 @@ func fn6() {
 
 
 } // want "unnecessary trailing newline"
+
+func fn7() { /* Multiline spaning 1 line */ // want "unnecessary leading newline"
+
+	fmt.Println("No cmoments")
+}
+
+func fn8() { /* Multiline spaning
+	over several lines */
+
+	fmt.Println("No cmoments")
+}
+
+func fn9() { /* Multiline spaning
+
+	over several lines */
+
+	fmt.Println("No cmoments")
+}
