@@ -52,7 +52,7 @@ func fn3(
 	fmt.Println("Hello, World")
 
 	if true { // want "unnecessary leading newline"
-		fmt.Println("No cmoments")
+		fmt.Println("No comments")
 	} // want "unnecessary trailing newline"
 	// Also at end
 } // want "unnecessary trailing newline"
@@ -77,7 +77,7 @@ func fn5() {
 		// A comment that should still exist after this
 		// This one should also still exist
 
-		fmt.Println("No cmoments")
+		fmt.Println("No comments")
 	} // want "unnecessary trailing newline"
 } // want "unnecessary trailing newline"
 
@@ -100,23 +100,23 @@ func fn6() {
 			Fusce viverra libero vitae tellus dictum, sed congue risus sodales.
 		*/
 
-		fmt.Println("No cmoments")
+		fmt.Println("No comments")
 	} // want "unnecessary trailing newline"
 } // want "unnecessary trailing newline"
 
 func fn7() { /* Multiline spaning 1 line */ // want "unnecessary leading newline"
-	fmt.Println("No cmoments")
+	fmt.Println("No comments")
 }
 
 func fn8() { /* Multiline spaning
 	over several lines */
 
-	fmt.Println("No cmoments")
+	fmt.Println("No comments")
 }
 
 func fn9() { /* Multiline spaning
 
 	over several lines */
 
-	fmt.Println("No cmoments")
+	fmt.Println("No comments")
 }
