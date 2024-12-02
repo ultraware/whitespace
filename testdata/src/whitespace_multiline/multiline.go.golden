@@ -23,7 +23,7 @@ func fn3() {
 	// This is fine, newline before comment
 }
 
-// MultiFunc (FuncDecl), MultiIf and MultiFunc(FuncLit) without newlinew.
+// MultiFunc (FuncDecl), MultiIf and MultiFunc(FuncLit) without newline.
 func fn4(
 	arg1 int,
 	arg2 int,
