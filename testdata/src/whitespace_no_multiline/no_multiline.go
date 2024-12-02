@@ -2,7 +2,7 @@ package whitespace
 
 import "fmt"
 
-// MultiFunc (FuncDecl), MultiIf and MultiFunc(FuncLit) want to remove newlinne.
+// MultiFunc (FuncDecl), MultiIf and MultiFunc(FuncLit) want to remove newline.
 func fn1(
 	arg1 int,
 	arg2 int,
