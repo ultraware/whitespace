@@ -9,7 +9,6 @@ import (
 func TestWantMultiline(t *testing.T) {
 	testdata := analysistest.TestData()
 	analyzer := NewAnalyzer(&Settings{
-		Mode:      RunningModeNative,
 		MultiIf:   true,
 		MultiFunc: true,
 	})
@@ -20,7 +19,6 @@ func TestWantMultiline(t *testing.T) {
 func TestNoMultiline(t *testing.T) {
 	testdata := analysistest.TestData()
 	analyzer := NewAnalyzer(&Settings{
-		Mode:      RunningModeNative,
 		MultiIf:   false,
 		MultiFunc: false,
 	})
