@@ -13,6 +13,9 @@ import (
 type Settings struct {
 	MultiIf   bool
 	MultiFunc bool
+
+	IgnoreLeading  bool
+	IgnoreTrailing bool
 }
 
 // NewAnalyzer creates a new whitespace analyzer.
@@ -37,6 +40,8 @@ func flags(settings *Settings) flag.FlagSet {
 	flags := flag.NewFlagSet("", flag.ExitOnError)
 	flags.BoolVar(&settings.MultiIf, "multi-if", settings.MultiIf, "Check that multi line if-statements have a leading newline")
 	flags.BoolVar(&settings.MultiFunc, "multi-func", settings.MultiFunc, "Check that multi line functions have a leading newline")
+	flags.BoolVar(&settings.IgnoreLeading, "ignore-leading", settings.IgnoreLeading, "Do not check leading newlines")
+	flags.BoolVar(&settings.IgnoreTrailing, "ignore-trailing", settings.IgnoreTrailing, "Do not check trailing newlines")
 
 	return *flags
 }
@@ -109,26 +114,30 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		}
 
 		opening, first, last := firstAndLast(comments, v.fset, stmt)
-		startMsg := checkStart(v.fset, opening, first)
 
-		if wantNewline && startMsg == nil && len(stmt.List) >= 1 {
-			v.messages = append(v.messages, analysis.Diagnostic{
-				Pos:     opening,
-				Message: "multi-line statement should be followed by a newline",
-				SuggestedFixes: []analysis.SuggestedFix{{
-					TextEdits: []analysis.TextEdit{{
-						Pos:     stmt.List[0].Pos(),
-						End:     stmt.List[0].Pos(),
-						NewText: []byte("\n"),
+		if !v.settings.IgnoreLeading {
+			startMsg := checkStart(v.fset, opening, first)
+			if wantNewline && startMsg == nil && len(stmt.List) >= 1 {
+				v.messages = append(v.messages, analysis.Diagnostic{
+					Pos:     opening,
+					Message: "multi-line statement should be followed by a newline",
+					SuggestedFixes: []analysis.SuggestedFix{{
+						TextEdits: []analysis.TextEdit{{
+							Pos:     stmt.List[0].Pos(),
+							End:     stmt.List[0].Pos(),
+							NewText: []byte("\n"),
+						}},
 					}},
-				}},
-			})
-		} else if !wantNewline && startMsg != nil {
-			v.messages = append(v.messages, *startMsg)
+				})
+			} else if !wantNewline && startMsg != nil {
+				v.messages = append(v.messages, *startMsg)
+			}
 		}
 
-		if msg := checkEnd(v.fset, stmt.Rbrace, last); msg != nil {
-			v.messages = append(v.messages, *msg)
+		if !v.settings.IgnoreTrailing {
+			if msg := checkEnd(v.fset, stmt.Rbrace, last); msg != nil {
+				v.messages = append(v.messages, *msg)
+			}
 		}
 	}
 
