@@ -25,3 +25,21 @@ func TestNoMultiline(t *testing.T) {
 
 	analysistest.RunWithSuggestedFixes(t, testdata, analyzer, "whitespace_no_multiline")
 }
+
+func TestNoLeading(t *testing.T) {
+	testdata := analysistest.TestData()
+	analyzer := NewAnalyzer(&Settings{
+		IgnoreLeading: true,
+	})
+
+	analysistest.RunWithSuggestedFixes(t, testdata, analyzer, "whitespace_no_leading")
+}
+
+func TestNoTrailing(t *testing.T) {
+	testdata := analysistest.TestData()
+	analyzer := NewAnalyzer(&Settings{
+		IgnoreTrailing: true,
+	})
+
+	analysistest.RunWithSuggestedFixes(t, testdata, analyzer, "whitespace_no_trailing")
+}
