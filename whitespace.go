@@ -4,6 +4,7 @@ import (
 	"flag"
 	"go/ast"
 	"go/token"
+	"sort"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -165,22 +166,37 @@ func firstAndLast(comments []*ast.CommentGroup, fset *token.FileSet, stmt *ast.B
 
 	first, last := ast.Node(stmt.List[0]), ast.Node(stmt.List[len(stmt.List)-1])
 
-	for _, c := range comments {
+	// comments is sorted by position (guaranteed by go/ast), so a comment
+	// that can possibly matter for this block is bounded to a small,
+	// contiguous slice around it. Scanning every comment in the file for
+	// every block made this quadratic in large files with many comments.
+	lo := sort.Search(len(comments), func(i int) bool { return comments[i].End() >= stmt.Pos() })
+
+	openingLine := posLine(fset, openingPos)
+	stmtPosLine := posLine(fset, stmt.Pos())
+	stmtEndLine := posLine(fset, stmt.End())
+
+	for _, c := range comments[lo:] {
+		if c.Pos() > stmt.End() {
+			break
+		}
+
 		// If the comment is on the same line as the opening pos (initially the
 		// left bracket) but it starts after the pos the comment must be after
 		// the bracket and where that comment ends should be considered where
 		// the fix should start.
-		if posLine(fset, c.Pos()) == posLine(fset, openingPos) && c.Pos() > openingPos {
-			if posLine(fset, c.End()) != posLine(fset, openingPos) {
+		if posLine(fset, c.Pos()) == openingLine && c.Pos() > openingPos {
+			if posLine(fset, c.End()) != openingLine {
 				// This is a multiline comment that spans from the `LBrace` line
 				// to a line further down. This should always be seen as ok!
 				first = c
 			} else {
 				openingPos = c.End()
+				openingLine = posLine(fset, openingPos)
 			}
 		}
 
-		if posLine(fset, c.Pos()) == posLine(fset, stmt.Pos()) || posLine(fset, c.End()) == posLine(fset, stmt.End()) {
+		if posLine(fset, c.Pos()) == stmtPosLine || posLine(fset, c.End()) == stmtEndLine {
 			continue
 		}
 
